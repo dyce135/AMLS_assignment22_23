@@ -1,11 +1,12 @@
 # Import packages
 import pandas as pd
-import splitfolders
+import json
 import os
 
 # Use PlaidML as a keras backend (AMD GPU acceleration)
 os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
+import tensorflow as tf
 import keras as k
 from keras.preprocessing.image import ImageDataGenerator
 from PIL import Image, ImageOps
@@ -63,6 +64,7 @@ test_data_gen = image_gen_test.flow_from_directory(batch_size=batch_size,
                                                    class_mode='binary')
 
 model_dir = os.path.join(script_dir, "A1\Gender_classifier.h5")
+
 model = k.models.load_model(model_dir)
 
 print("Testing model...")

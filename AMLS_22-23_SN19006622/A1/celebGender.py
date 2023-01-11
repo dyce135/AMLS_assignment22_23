@@ -3,21 +3,23 @@ import pandas as pd
 import splitfolders
 import os
 
-# Use PlaidML as a keras backend (AMD GPU acceleration)
+# Use PlaidML as a keras backend (Set up PlaidML using 'plaidml-setup' for GPU acceleration)
 os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 import keras as k
+import keras.backend as b
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping
 from keras import applications as kapp
 from PIL import Image, ImageOps
+import shutil
 import re
 
 # Project path
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# Resize images if needed
+# Resize training images if needed
 def resizetrain(train_dir, train_genders):
     for file in os.listdir(train_dir):
         f = os.path.join(train_dir, file)
@@ -36,7 +38,7 @@ def resizetrain(train_dir, train_genders):
                                  file),
                     'png')
 
-
+# Resize testing images if needed
 def resizetest(test_dir, test_genders):
     for file in os.listdir(test_dir):
         f = os.path.join(test_dir, file)
@@ -56,6 +58,20 @@ def resizetest(test_dir, test_genders):
                         r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_test_resized\male",
                         file),
                     'png')
+
+
+# Gender classifier model class
+class GenderClassify(k.Model):
+
+    # Default params
+    img_size, batch_size, epoch, lr = 224, 100, 15, 0.0001
+
+    def __init__(self, **kwargs):
+        self.img_size = kwargs.get('')
+        self.batch_size = kwargs.get('')
+        self.epoch = kwargs.get('')
+        self.lr = kwargs.get('')
+
 
 
 train_labels = pd.read_csv(os.path.join(script_dir, "Datasets\celeba\labels.csv"), sep='\t')
@@ -84,38 +100,37 @@ if not os.path.exists(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Dat
     os.mkdir(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_test_resized\female")
     resizetest(test_dir, test_genders)
 
-if not os.path.exists(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data"):
-    os.mkdir(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data")
-    train_dir = r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_resized"
-    splitfolders.ratio(train_dir, output=r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data",
-                       seed=55, ratio=(.8, .2))
 
-train_dir = r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data\train"
-val_dir = r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data\val"
+total_training = len(os.listdir(os.path.join(script_dir,"Datasets\celeba\img")))
+train_dir = r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_resized"
 test_dir = r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_test_resized"
-train_num = len(os.listdir(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data\train\male")) + \
-            len(os.listdir(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_data\train\female"))
-val_num = len(os.listdir(os.path.join(val_dir, "male"))) + len(os.listdir(os.path.join(val_dir, "female")))
+val_num = 0.2*total_training
+train_num = len(os.listdir(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_resized\male")) + \
+            len(os.listdir(r"C:\Users\konra\PycharmProjects\AMLS_22-23_SN19006622\Datasets\celeba_resized\female"))
+
 
 print("Number of training samples: ", train_num)
 print("Number of validation samples: ", val_num)
 print("Number of testing samples: ", test_num)
 img_size = 224
 batch_size = 100
-epoch = 2
+epoch = 15
+lr = 0.0001
 
-image_gen_train = ImageDataGenerator(rescale=1. / 255)
+
+image_gen_train = ImageDataGenerator(rescale=1. / 255, validation_split=0.2)
 train_data_gen = image_gen_train.flow_from_directory(batch_size=batch_size,
                                                      directory=train_dir,
                                                      shuffle=True,
                                                      target_size=(img_size, img_size),
-                                                     class_mode='binary')
+                                                     class_mode='binary',
+                                                     subset='training')
 
-image_gen_val = ImageDataGenerator(rescale=1. / 255)
-val_data_gen = image_gen_val.flow_from_directory(batch_size=batch_size,
-                                                 directory=val_dir,
-                                                 target_size=(img_size, img_size),
-                                                 class_mode='binary')
+val_data_gen = image_gen_train.flow_from_directory(batch_size=batch_size,
+                                                   directory=train_dir,
+                                                   target_size=(img_size, img_size),
+                                                   class_mode='binary',
+                                                   subset='validation')
 
 image_gen_test = ImageDataGenerator(rescale=1. / 255)
 test_data_gen = image_gen_test.flow_from_directory(batch_size=batch_size,
@@ -126,19 +141,19 @@ test_data_gen = image_gen_test.flow_from_directory(batch_size=batch_size,
 vgg_model = kapp.VGG16(include_top=False, weights="imagenet", input_shape=(img_size, img_size, 3))
 
 for layer in vgg_model.layers:
-    #    print(layer.name)
+    #print(layer.name)
     layer.trainable = False
 
 top_layer = vgg_model.get_layer('block5_pool')
 top_output = top_layer.output
 x = k.layers.GlobalMaxPool2D()(top_output)
-x = k.layers.Dense(512, activation='relu')(x)
+x = k.layers.Dense(1024, activation='relu')(x)
 x = k.layers.Dropout(0.5)(x)
 x = k.layers.Dense(2, activation='sigmoid')(x)
 
 gender_model = k.Model(vgg_model.input, x)
-
-gender_model.compile(optimizer='adam', loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
+opt = k.optimizers.Adam(lr)
+gender_model.compile(optimizer=opt, loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
 
 # Early stopper - stops training when the program finds a local minimum
 es = EarlyStopping(monitor='loss', min_delta=0.0001, mode='auto', baseline=None, verbose=2)
@@ -154,9 +169,6 @@ gender_model.fit_generator(train_data_gen,
                            callbacks=[es])
 
 # Save trained model architecture and weights to local directory
-model_json = gender_model.to_json()
-with open(os.path.join(script_dir, "A1\Gender_classifier.json"), "w") as json_file:
-    json_file.write(model_json)
 gender_model.save(os.path.join(script_dir, "A1\Gender_classifier.h5"))
 gender_model.save_weights(os.path.join(script_dir, "A1\Gender_weights.h5"))
 print("Saved model to disk")
