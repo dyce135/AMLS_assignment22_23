@@ -1,3 +1,5 @@
+__author__ = "Konrad Chan"
+
 # Run this file for k-fold grid search cross-validation
 # Import packages
 import pandas as pd
@@ -64,7 +66,8 @@ for drop in drop_list:
             for train, val in kfold.split(x, y):
                 gender_model = cg.GenderClassify(img_size, drop=drop, nodes=nodes, normalise=True)
                 opt = tf.keras.optimizers.Adam(lr)
-                gender_model.compile(optimizer=opt, loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=['acc'])
+                gender_model.compile(optimizer=opt, loss=tf.keras.losses.sparse_categorical_crossentropy,
+                                     metrics=['acc'])
                 print("Training model ", model_no, " for fold no. ", nk)
                 gender_model.fit(x[train], y[train],
                                  batch_size=batch_size,
@@ -86,8 +89,10 @@ for drop in drop_list:
             model_no += 1
 
 df = pd.DataFrame({'Mean accuracy': model_acc, 'Mean Loss': model_loss})
-df.index = ['LR = 0.0001, Nodes = 1024, Dropout = 0.25', 'LR = 0.0001, Nodes = 512, Dropout = 0.25', 'LR = 0.001, Nodes = 1024, Dropout = 0.25',
-            'LR = 0.001, Nodes = 512, Dropout = 0.25', 'LR = 0.0001, Nodes = 1024, Dropout = 0.5', 'LR = 0.0001, Nodes = 512, Dropout = 0.5', 'LR = 0.001, Nodes = 1024, Dropout = 0.5',
+df.index = ['LR = 0.0001, Nodes = 1024, Dropout = 0.25', 'LR = 0.0001, Nodes = 512, Dropout = 0.25',
+            'LR = 0.001, Nodes = 1024, Dropout = 0.25',
+            'LR = 0.001, Nodes = 512, Dropout = 0.25', 'LR = 0.0001, Nodes = 1024, Dropout = 0.5',
+            'LR = 0.0001, Nodes = 512, Dropout = 0.5', 'LR = 0.001, Nodes = 1024, Dropout = 0.5',
             'LR = 0.001, Nodes = 512, Dropout = 0.5']
 print(df)
 df.to_csv(join(script_dir, "A1//gender_cv.csv"))
