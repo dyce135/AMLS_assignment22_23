@@ -1,23 +1,19 @@
+# This module contains the model architectures and functions to be used during training, testing, and cross-validation
 # Import packages
 import os
 import warnings
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import numpy
-
-# Use PlaidML as a keras backend (Set up PlaidML using 'plaidml-setup' for GPU acceleration)
-os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-
-import keras as k
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras as k
 from os.path import join, exists
 from keras import applications as kapp
-from keras.preprocessing.image import img_to_array, load_img
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from PIL import Image, ImageOps
 import re
-import numpy as np
-import shutil
-from distutils.dir_util import copy_tree
 
 # Project path
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,9 +30,9 @@ def resizetrain(train_dir, train_genders):
             im_resized = ImageOps.pad(im, (224, 224))
             # Save to male or female folder depending on label
             if train_genders[filenum] == 0:
-                im_resized.save(join(join(script_dir, "Datasets//celeba_resized//female"), file), 'png')
+                im_resized.save(join(join(script_dir, "Datasets/celeba_resized/female"), file), 'png')
             else:
-                im_resized.save(join(join(script_dir, "Datasets\celeba_resized\male"), file), 'png')
+                im_resized.save(join(join(script_dir, "Datasets/celeba_resized/male"), file), 'png')
 
 
 # Resize testing images by class
@@ -50,38 +46,15 @@ def resizetest(test_dir, test_genders):
             im_resized = ImageOps.pad(im, (224, 224))
             # Save to male or female folder depending on label
             if test_genders[filenum] == 0:
-                im_resized.save(join(join(script_dir, "Datasets//celeba_test_resized//female"), file), 'png')
+                im_resized.save(join(join(script_dir, "Datasets/celeba_test_resized/female"), file), 'png')
             else:
-                im_resized.save(join(join(script_dir, "Datasets\celeba_test_resized\male"), file), 'png')
-
-
-# Generate folders for validation
-def valfolders(resized_dir, size):
-    val_dir = join(script_dir, "Datasets//celeba_val")
-    temp_dir = join(val_dir, "temp")
-    os.mkdir(val_dir)
-    os.mkdir(temp_dir)
-    for folder in range(1, 6):
-        os.mkdir(join(val_dir, str(folder)))
-    copy_tree(join(resized_dir, "male"), temp_dir)
-    copy_tree(join(resized_dir, "female"), temp_dir)
-    index = np.arange(0, size)
-    np.random.shuffle(index)
-    i_split = np.split(index, 5)
-    folder = 1
-    for i in i_split:
-        for img in i:
-            image = join(temp_dir, str(img) + ".jpg")
-            dest = join(val_dir, str(folder))
-            shutil.copy(image, dest)
-        folder += 1
-    shutil.rmtree(temp_dir)
+                im_resized.save(join(join(script_dir, "Datasets/celeba_test_resized/male"), file), 'png')
 
 
 # Convert training images to arrays
 def train_arr(size):
-    train_dat = numpy.empty([size, 224, 224, 3])
-    resized_dir = join(script_dir, "Datasets//celeba_resized")
+    train_dat = np.empty([size, 224, 224, 3], dtype=np.uint8)
+    resized_dir = join(script_dir, "Datasets/celeba_resized")
 
     for file in os.listdir(join(resized_dir, "female")):
         f = join(resized_dir, "female", file)
@@ -103,8 +76,8 @@ def train_arr(size):
 
 # Convert testing images to arrays
 def test_arr(size):
-    test_dat = numpy.empty([size, 224, 224, 3])
-    resized_dir = join(script_dir, "Datasets//celeba_test_resized")
+    test_dat = np.empty([size, 224, 224, 3], dtype=np.uint8)
+    resized_dir = join(script_dir, "Datasets/celeba_test_resized")
 
     for file in os.listdir(join(resized_dir, "female")):
         f = join(resized_dir, "female", file)
@@ -124,13 +97,19 @@ def test_arr(size):
     return test_dat
 
 
-# Gender classifier model class
+# Custom gender classifier model class
 class GenderClassifyCustom(k.Model):
 
+    # Constructor with layers
     def __init__(self, size, **kwargs):
         self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
         self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
+        self.nodes = kwargs.get('nodes', 1024)
+        self.drop = kwargs.get('drop', 0.5)
+        self.normalise = kwargs.get('normalise', True)
         super().__init__()
+        self.rescale = k.layers.Rescaling(1./255)
+
         self.layer1 = k.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(size, size, 3), padding='same')
         self.layer2 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
         self.layer3 = k.layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2))
@@ -142,13 +121,17 @@ class GenderClassifyCustom(k.Model):
         self.layer4 = k.layers.Dropout(0.25)
 
         self.layer5 = k.layers.GlobalMaxPool2D()
-        self.layer6 = k.layers.Dense(128, activation='relu', kernel_initializer=self.kernel,
+        self.layer6 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
                                      bias_initializer=self.bias)
-        self.layer7 = k.layers.Dropout(0.5)
+        self.layer7 = k.layers.Dropout(self.drop)
         self.layer_out = k.layers.Dense(2, activation='sigmoid')
 
+    # Call function to connect layers
     def call(self, inputs):
-        x = self.layer1(inputs)
+        if self.normalise:
+            x = self.rescale(inputs)
+        else:
+            x = self.layer1(inputs)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
@@ -158,35 +141,39 @@ class GenderClassifyCustom(k.Model):
         out = self.layer_out(x)
         return out
 
-    def model(self):
-        input = k.Input(shape=(224, 224, 3))
-        return k.Model(input, self.call(input))
-
 
 # Transfer learning gender classifier based on the pretrained VGG16 model
 class GenderClassify(k.Model):
 
+    # Constructor with layers
     def __init__(self, size, **kwargs):
         self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
         self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
+        self.drop = kwargs.get('drop', 0.5)
         self.nodes = kwargs.get('nodes', 1024)
+        self.normalise = kwargs.get('normalise', True)
         super().__init__()
+        self.rescale = k.layers.Rescaling(1./255)
         self.vgg = kapp.VGG16(include_top=False, weights="imagenet", input_shape=(size, size, 3))
         for layer in self.vgg.layers:
             layer.trainable = False
+        if self.normalise:
+            self.vgg_new = k.Model(self.vgg.layers[1].input, self.vgg.output)
         self.layer1 = k.layers.GlobalMaxPool2D()
         self.layer2 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
                                      bias_initializer=self.bias)
-        self.layer3 = k.layers.Dropout(0.5)
+        self.layer3 = k.layers.Dropout(self.drop)
         self.layer_out = k.layers.Dense(2, activation='sigmoid')
 
+    # Call function to connect layers
     def call(self, inputs):
-        vgg = self.vgg(inputs)
+        if self.normalise:
+            rescale = self.rescale(inputs)
+            vgg = self.vgg_new(rescale)
+        else:
+            vgg = self.vgg(inputs)
         maxpool = self.layer1(vgg)
         dense = self.layer2(maxpool)
         drop = self.layer3(dense)
         out = self.layer_out(drop)
         return out
-
-    def model(self):
-        return k.Model(self.vgg.input, self.call(self.vgg.input))
