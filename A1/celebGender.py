@@ -1,4 +1,3 @@
-__author__ = "Konrad Chan"
 # This module contains the model architectures and functions to be used during training, testing, and cross-validation
 # Import packages
 import os

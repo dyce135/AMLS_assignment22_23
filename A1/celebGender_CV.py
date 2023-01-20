@@ -1,5 +1,3 @@
-__author__ = "Konrad Chan"
-
 # Run this file for k-fold grid search cross-validation
 # Import packages
 import pandas as pd
