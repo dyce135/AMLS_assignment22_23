@@ -5,7 +5,7 @@ Project repository for the 2022-2023 ELEC00134: Applied Machine Learning Systems
 ## Environment and dependent packages
 
 This project was developed in Python 3.10.9 using the following packages and the following specified versions:
-- tensorflow-rocm 2.11.0 (Alternatively, use tensorflow-gpu 2.11.0 or tensorflow 2.11.0)
+- tensorflow-rocm 2.11.0 (Alternatively, use **tensorflow-gpu 2.11.0** or **tensorflow 2.11.0**)
 - keras 2.11.0
 - skimage 0.19.3
 - numpy 1.22.4
