@@ -11,6 +11,9 @@ from keras.preprocessing.image import ImageDataGenerator
 import celebGender as cg
 from os.path import join, exists
 import numpy as np
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 # Project path
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,7 +47,7 @@ def switch():
                                                       target_size=(img_size, img_size),
                                                       class_mode='binary')
 
-        gender_model = k.models.load_model(join(script_dir, "A1/Gender_classifier"))
+        gender_model = k.models.load_model(join(script_dir, "A1/Gender_classifier_gen"))
 
         print("Testing model...")
         result = gender_model.evaluate(test_gen, batch_size=batch_size, verbose=1)
@@ -61,17 +64,45 @@ def switch():
         result = gender_model.evaluate(x, y, batch_size=batch_size, verbose=1)
         print("Test loss and accuracy: ", result)
 
+        y_pred = gender_model.predict(x, batch_size=batch_size, verbose=1)
+        y_pred = np.rint(y_pred)
+        confusion = confusion_matrix(y, y_pred, normalize='pred')
+        disp = ConfusionMatrixDisplay(confusion, display_labels=['Female', 'Male'])
+        disp.plot(values_format='.5g')
+        plt.show()
+        print(confusion)
+
+    def lbp_test():
+        x = cg.test_hist(1000, 4, 8, 2, 1e-7, 224)
+        y = np.array(test_genders, dtype=np.int8)
+        x = x.reshape((1000, 160, 1))
+
+        gender_model = k.models.load_model(join(script_dir, "A1/Gender_classifier_lbp"))
+
+        print("Testing model...")
+        result = gender_model.evaluate(x, y, batch_size=batch_size, verbose=1)
+        print("Test loss and accuracy: ", result)
+
+        y_pred = gender_model.predict(x, batch_size=batch_size, verbose=1)
+        y_pred = np.rint(y_pred)
+        confusion = confusion_matrix(y, y_pred, normalize='pred')
+        disp = ConfusionMatrixDisplay(confusion, display_labels=['Female', 'Male'])
+        disp.plot(values_format='.5g')
+        plt.show()
+        print(confusion)
+
     def default():
         print("Please enter a valid option.")
         switch()
 
     # User input
     option = int(
-        input("Enter 1 for testing with image augmentation\nEnter 2 for training without image augmentation:\n"))
+        input("Enter 1 for testing with image augmentation\nEnter 2 for testing without image augmentation\nEnter 3 for testing using local binary patterns:\n"))
 
     switch_dict = {
         1: gen_test,
         2: normal_test,
+        3: lbp_test,
     }
 
     switch_dict.get(option, default)()

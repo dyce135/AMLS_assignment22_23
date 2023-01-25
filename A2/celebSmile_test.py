@@ -8,6 +8,9 @@ import tensorflow.keras as k
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import celebSmile as cs
 from os.path import join, exists
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 # Project path
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -57,6 +60,14 @@ def switch():
         print("Testing model...")
         result = smile_model.evaluate(x, y, batch_size=batch_size, verbose=1)
         print("Test loss and accuracy: ", result)
+
+        y_pred = smile_model.predict(x, batch_size=batch_size, verbose=1)
+        y_pred = np.rint(y_pred)
+        confusion = confusion_matrix(y, y_pred, normalize='pred')
+        disp = ConfusionMatrixDisplay(confusion, display_labels=['Not smiling', 'Smiling'])
+        disp.plot(values_format='.5g')
+        plt.show()
+        print(confusion)
 
     def default():
         print("Please enter a valid option.")

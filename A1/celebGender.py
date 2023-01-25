@@ -6,6 +6,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+from skimage import feature
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras as k
@@ -97,47 +98,131 @@ def test_arr(size):
     return test_dat
 
 
-# Custom gender classifier model class
-class GenderClassifyCustom(k.Model):
+# Generate histogram data for training
+def train_hist(samples, splits, points, rad, eps, size):
+    train_dat = np.empty([samples, (splits ** 2) * (points + 2)])
+    train_dir = join(script_dir, "Datasets/celeba_resized")
+
+    # Find feature vector for each image
+    for file in os.listdir(join(train_dir, "female")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "female"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        # Split image into splits^2 sub-images
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                # Find feature vector from concatenated histograms
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    for file in os.listdir(join(train_dir, "male")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "male"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    return train_dat
+
+
+# Generate histogram data for testing
+def test_hist(samples, splits, points, rad, eps, size):
+    train_dat = np.empty([samples, (splits ** 2) * (points + 2)])
+    train_dir = join(script_dir, "Datasets/celeba_test_resized")
+
+    for file in os.listdir(join(train_dir, "female")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "female"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    for file in os.listdir(join(train_dir, "male")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "male"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    return train_dat
+
+
+# smile classifier model class
+class GenderClassifyLBP(k.Model):
 
     # Constructor with layers
     def __init__(self, size, **kwargs):
         self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
         self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
-        self.nodes = kwargs.get('nodes', 1024)
-        self.drop = kwargs.get('drop', 0.5)
-        self.normalise = kwargs.get('normalise', True)
+        self.inp = kwargs.get('input_shape', (160,))
         super().__init__()
-        self.rescale = k.layers.Rescaling(1./255)
-
-        self.layer1 = k.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(size, size, 3), padding='same')
-        self.layer2 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
-        self.layer3 = k.layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2))
-        self.layer4 = k.layers.Dropout(0.25)
-
-        self.layer1 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
-        self.layer2 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
-        self.layer3 = k.layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2))
-        self.layer4 = k.layers.Dropout(0.25)
-
-        self.layer5 = k.layers.GlobalMaxPool2D()
-        self.layer6 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
+        self.layer1 = k.layers.Conv1D(64, activation='relu', kernel_size=3, input_shape=self.inp)
+        self.layer2 = k.layers.Dense(256, activation='relu', kernel_initializer=self.kernel,
                                      bias_initializer=self.bias)
-        self.layer7 = k.layers.Dropout(self.drop)
-        self.layer_out = k.layers.Dense(2, activation='sigmoid')
+        self.layer_conv = k.layers.Conv1D(128, activation='relu', kernel_size=3)
+        self.layer_pool = k.layers.MaxPooling1D(pool_size=2, strides=2)
+        self.layer3 = k.layers.Flatten()
+        self.layer_out = k.layers.Dense(1, activation='sigmoid')
 
     # Call function to connect layers
     def call(self, inputs):
-        if self.normalise:
-            x = self.rescale(inputs)
-        else:
-            x = self.layer1(inputs)
+        x = self.layer1(inputs)
         x = self.layer2(x)
         x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.layer5(x)
-        x = self.layer6(x)
-        x = self.layer7(x)
         out = self.layer_out(x)
         return out
 
@@ -147,7 +232,8 @@ class GenderClassify(k.Model):
 
     # Constructor with layers
     def __init__(self, size, **kwargs):
-        self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
+        self.kernel_dev = kwargs.get('kernel_stddev', 0.01)
+        self.kernel = k.initializers.RandomNormal(mean=0, stddev=self.kernel_dev)
         self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
         self.drop = kwargs.get('drop', 0.5)
         self.nodes = kwargs.get('nodes', 1024)
@@ -163,7 +249,7 @@ class GenderClassify(k.Model):
         self.layer2 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
                                      bias_initializer=self.bias)
         self.layer3 = k.layers.Dropout(self.drop)
-        self.layer_out = k.layers.Dense(2, activation='sigmoid')
+        self.layer_out = k.layers.Dense(1, activation='sigmoid')
 
     # Call function to connect layers
     def call(self, inputs):
@@ -177,3 +263,4 @@ class GenderClassify(k.Model):
         drop = self.layer3(dense)
         out = self.layer_out(drop)
         return out
+

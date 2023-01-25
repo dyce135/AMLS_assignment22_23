@@ -32,9 +32,9 @@ def switch():
                                                       class_mode='binary',
                                                       subset='validation')
 
-        gender_model = cs.SmileClassify(img_size, nodes=nodes, drop=drop, normalise=False)
+        gender_model = cs.SmileClassify(img_size, nodes=nodes, drop=drop, normalise=False, kernel_stddev=stddev)
         opt = k.optimizers.Adam(lr)
-        gender_model.compile(optimizer=opt, loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
+        gender_model.compile(optimizer=opt, loss=k.losses.binary_crossentropy, metrics=['acc'])
 
         # Early stopper - stops training when the program finds a local minimum
         es = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, mode='auto', baseline=None, verbose=2,
@@ -50,20 +50,20 @@ def switch():
                          callbacks=[es])
 
         # Save trained model architecture and weights to local directory
-        model_path = join(script_dir, "A2/smile_classifier")
+        model_path = join(script_dir, "A2/smile_classifier_gen")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
 
     # Training without augmentation generators
     def normalTrain():
-        x = cs.train_arr(total_training) / 255
+        x = cs.train_arr(total_training)
         y = np.array(train_smiles)
 
         x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=split)
 
-        gender_model = cs.SmileClassify(img_size, nodes=nodes, drop=drop)
+        gender_model = cs.SmileClassify(img_size, nodes=nodes, drop=drop, kernel_stddev=stddev)
         opt = k.optimizers.Adam(lr)
-        gender_model.compile(optimizer=opt, loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
+        gender_model.compile(optimizer=opt, loss=k.losses.binary_crossentropy, metrics=['acc'])
 
         # Early stopper - stops training when the program finds a local minimum
         es = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, mode='auto', baseline=None, verbose=2,
@@ -118,10 +118,11 @@ if not exists(join(script_dir, "Datasets/celeba_resized_smile")):
 img_size = 224
 batch_size = 64
 epoch = 100
-lr = 0.001
+lr = 0.0001
 split = 0.1
 nodes = 1024
 drop = 0.25
+stddev = 0.01
 
 total_training = len(os.listdir(join(script_dir, "Datasets/celeba/img")))
 train_dir = join(script_dir, "Datasets/celeba_resized_smile")

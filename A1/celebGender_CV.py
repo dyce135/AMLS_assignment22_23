@@ -46,31 +46,30 @@ model_loss, model_acc, loss, acc = [], [], [], []
 
 model_no = 1
 
-learning_rate = [0.0001, 0.001]
+lr = 0.0001
+stdev = [0.01, 0.05]
 nodes_list = [512, 1024]
 drop_list = [0.25, 0.5]
-epoch = 4
+epoch = 5
 batch_size = 64
 
 for drop in drop_list:
-    for lr in learning_rate:
+    for dev in stdev:
         for nodes in nodes_list:
 
             cv_loss, cv_acc = [], []
             nk = 1
 
-            print("\nModel ", model_no, " details: \nLR = ", lr, "\nNodes = ", nodes, "\nDropout = ", drop, "\n")
+            print("\nModel ", model_no, " details: \nKernel stddev = ", dev, "\nNodes = ", nodes, "\nDropout = ", drop, "\n")
 
             for train, val in kfold.split(x, y):
                 gender_model = cg.GenderClassify(img_size, drop=drop, nodes=nodes, normalise=True)
                 opt = tf.keras.optimizers.Adam(lr)
-                gender_model.compile(optimizer=opt, loss=tf.keras.losses.sparse_categorical_crossentropy,
-                                     metrics=['acc'])
+                gender_model.compile(optimizer=opt, loss=tf.keras.losses.binary_crossentropy, metrics=['acc'])
                 print("Training model ", model_no, " for fold no. ", nk)
                 gender_model.fit(x[train], y[train],
                                  batch_size=batch_size,
                                  epochs=epoch,
-                                 validation_data=(x[val], y[val]),
                                  verbose=1)
                 print("Validating model for fold no. ", nk)
                 result = gender_model.evaluate(x[val], y[val], batch_size=batch_size, verbose=1)
@@ -87,10 +86,8 @@ for drop in drop_list:
             model_no += 1
 
 df = pd.DataFrame({'Mean accuracy': model_acc, 'Mean Loss': model_loss})
-df.index = ['LR = 0.0001, Nodes = 1024, Dropout = 0.25', 'LR = 0.0001, Nodes = 512, Dropout = 0.25',
-            'LR = 0.001, Nodes = 1024, Dropout = 0.25',
-            'LR = 0.001, Nodes = 512, Dropout = 0.25', 'LR = 0.0001, Nodes = 1024, Dropout = 0.5',
-            'LR = 0.0001, Nodes = 512, Dropout = 0.5', 'LR = 0.001, Nodes = 1024, Dropout = 0.5',
-            'LR = 0.001, Nodes = 512, Dropout = 0.5']
+df.index = ['stddev = 0.01, Nodes = 1024, Dropout = 0.25', 'stddev = 0.01, Nodes = 512, Dropout = 0.25', 'stddev = 0.05, Nodes = 1024, Dropout = 0.25',
+            'stddev = 0.05, Nodes = 512, Dropout = 0.25', 'stddev = 0.01, Nodes = 1024, Dropout = 0.5', 'stddev = 0.01, Nodes = 512, Dropout = 0.5', 'stddev = 0.05, Nodes = 1024, Dropout = 0.5',
+            'stddev = 0.05, Nodes = 512, Dropout = 0.5']
 print(df)
 df.to_csv(join(script_dir, "A1//gender_cv.csv"))

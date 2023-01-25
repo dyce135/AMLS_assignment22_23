@@ -33,8 +33,8 @@ if not exists(join(script_dir, "Datasets/celeba_resized")):
 # Define hyper-parameters
 img_size = 224
 batch_size = 64
-epoch = 100
-lr = 0.001
+epoch = 1000
+lr = 0.0001
 split = 0.1
 nodes = 512
 drop = 0.25
@@ -69,7 +69,7 @@ def switch():
 
         gender_model = cg.GenderClassify(img_size, nodes=nodes, drop=drop, normalise=False)
         opt = k.optimizers.Adam(lr)
-        gender_model.compile(optimizer=opt, loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
+        gender_model.compile(optimizer=opt, loss=k.losses.binary_crossentropy, metrics=['acc'])
 
         # Early stopper - stops training when the program finds a local minimum
         es = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, mode='auto', baseline=None, verbose=2,
@@ -85,7 +85,7 @@ def switch():
                          callbacks=[es])
 
         # Save trained model weights to local directory
-        model_path = join(script_dir, "A1/Gender_classifier")
+        model_path = join(script_dir, "A1/Gender_classifier_gen")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
 
@@ -98,7 +98,7 @@ def switch():
 
         gender_model = cg.GenderClassify(img_size, nodes=nodes, drop=drop)
         opt = k.optimizers.Adam(lr)
-        gender_model.compile(optimizer=opt, loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
+        gender_model.compile(optimizer=opt, loss=k.losses.binary_crossentropy, metrics=['acc'])
 
         # Early stopper - stops training when the program finds a local minimum
         es = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, mode='auto', baseline=None, verbose=2,
@@ -118,17 +118,46 @@ def switch():
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
 
+    def lbp_train():
+        x = cg.train_hist(total_training, 4, 8, 2, 1e-7, 224)
+        y = np.array(train_genders, dtype=np.int8)
+        x = x.reshape((total_training, 160, 1))
+        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=split)
+
+        gender_model = cg.GenderClassifyLBP(img_size, nodes=nodes, drop=drop)
+        opt = k.optimizers.Adam(lr)
+        gender_model.compile(optimizer=opt, loss=k.losses.binary_crossentropy, metrics=['acc'])
+
+        # Early stopper - stops training when the program finds a local minimum
+        es = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, mode='auto', baseline=None, verbose=2,
+                           restore_best_weights=True)
+
+        print("Training model...")
+
+        gender_model.fit(x_train, y_train,
+                         batch_size=batch_size,
+                         epochs=epoch,
+                         validation_data=(x_val, y_val),
+                         verbose=1,
+                         callbacks=[es])
+
+        # Save trained model architecture and weights to local directory
+        model_path = join(script_dir, "A1/Gender_classifier_lbp")
+        gender_model.save(model_path, save_format='tf')
+        print("Saved model to", model_path)
+
     def default():
         print("Please enter a valid option.")
         switch()
 
     # User input
     option = int(
-        input("Enter 1 for training with image augmentation\nEnter 2 for training without image augmentation:\n"))
+        input("Enter 1 for training with image augmentation\nEnter 2 for training without image augmentation\nEnter 3 for training using local binary patterns:\n"))
 
     switch_dict = {
         1: genTraining,
         2: normalTrain,
+        3: lbp_train,
     }
 
     switch_dict.get(option, default)()

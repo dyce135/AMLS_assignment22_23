@@ -96,57 +96,13 @@ def test_arr(size):
     return test_dat
 
 
-# smile classifier model class
-class SmileClassifyCustom(k.Model):
-
-    # Constructor with layers
-    def __init__(self, size, **kwargs):
-        self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
-        self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
-        self.nodes = kwargs.get('nodes', 1024)
-        self.drop = kwargs.get('drop', 0.5)
-        self.normalise = kwargs.get('normalise', True)
-        super().__init__()
-        self.rescale = k.layers.Rescaling(1./255)
-
-        self.layer1 = k.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(size, size, 3), padding='same')
-        self.layer2 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
-        self.layer3 = k.layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2))
-        self.layer4 = k.layers.Dropout(0.25)
-
-        self.layer1 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
-        self.layer2 = k.layers.Conv2D(64, (3, 3), activation='relu', padding='same')
-        self.layer3 = k.layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2))
-        self.layer4 = k.layers.Dropout(0.25)
-
-        self.layer5 = k.layers.GlobalMaxPool2D()
-        self.layer6 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
-                                     bias_initializer=self.bias)
-        self.layer7 = k.layers.Dropout(self.drop)
-        self.layer_out = k.layers.Dense(2, activation='sigmoid')
-
-    # Call function to connect layers
-    def call(self, inputs):
-        if self.normalise:
-            x = self.rescale(inputs)
-        else:
-            x = self.layer1(inputs)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.layer5(x)
-        x = self.layer6(x)
-        x = self.layer7(x)
-        out = self.layer_out(x)
-        return out
-
-
 # Transfer learning smile classifier based on the pretrained VGG16 model
 class SmileClassify(k.Model):
 
     # Constructor with layers
     def __init__(self, size, **kwargs):
-        self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
+        self.kernel_dev = kwargs.get('kernel_stddev', 0.01)
+        self.kernel = k.initializers.RandomNormal(mean=0, stddev=self.kernel_dev)
         self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
         self.nodes = kwargs.get('nodes', 1024)
         self.drop = kwargs.get('drop', 0.5)
@@ -162,7 +118,7 @@ class SmileClassify(k.Model):
         self.layer2 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
                                      bias_initializer=self.bias)
         self.layer3 = k.layers.Dropout(self.drop)
-        self.layer_out = k.layers.Dense(2, activation='sigmoid')
+        self.layer_out = k.layers.Dense(1, activation='sigmoid')
 
     # Call function to connect layers
     def call(self, inputs):

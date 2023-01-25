@@ -46,33 +46,33 @@ model_loss, model_loss_var, model_acc, model_acc_var = [], [], [], []
 
 model_no = 1
 
-learning_rate = [0.0001, 0.001]
+lr = 0.0001
+stdev = [0.01, 0.05]
 nodes_list = [1024, 512]
 drop_list = [0.25, 0.5]
-epoch = 4
+epoch = 5
 batch_size = 64
 
 es = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, mode='auto', baseline=None, verbose=2,
                    restore_best_weights=True)
 
 for drop in drop_list:
-    for lr in learning_rate:
+    for dev in stdev:
         for nodes in nodes_list:
 
             cv_loss, cv_acc = [], []
             nk = 1
 
-            print("\nModel ", model_no, " details: \nLR = ", lr, "\nNodes = ", nodes, "\nDropout = ", drop, "\n")
+            print("\nModel ", model_no, " details: \nKernel stddev = ", dev, "\nNodes = ", nodes, "\nDropout = ", drop, "\n")
 
             for train, val in kfold.split(x, y):
-                smile_model = cs.SmileClassify(img_size, drop=drop, nodes=nodes, normalise=True)
+                smile_model = cs.SmileClassify(img_size, drop=drop, nodes=nodes, normalise=True, kernel_stddev=dev)
                 opt = k.optimizers.Adam(lr)
-                smile_model.compile(optimizer=opt, loss=k.losses.sparse_categorical_crossentropy, metrics=['acc'])
+                smile_model.compile(optimizer=opt, loss=k.losses.binary_crossentropy, metrics=['acc'])
                 print("Training model ", model_no, " for fold no. ", nk)
                 smile_model.fit(x[train], y[train],
                                 batch_size=batch_size,
                                 epochs=epoch,
-                                validation_data=(x[val], y[val]),
                                 verbose=1)
                 print("Validating model for fold no. ", nk)
                 result = smile_model.evaluate(x[val], y[val], batch_size=batch_size, verbose=1)
@@ -89,10 +89,8 @@ for drop in drop_list:
             model_no += 1
 
 df = pd.DataFrame({'Mean accuracy': model_acc, 'Mean Loss': model_loss})
-df.index = ['LR = 0.0001, Nodes = 1024, Dropout = 0.25', 'LR = 0.0001, Nodes = 512, Dropout = 0.25',
-            'LR = 0.001, Nodes = 1024, Dropout = 0.25',
-            'LR = 0.001, Nodes = 512, Dropout = 0.25', 'LR = 0.0001, Nodes = 1024, Dropout = 0.5',
-            'LR = 0.0001, Nodes = 512, Dropout = 0.5', 'LR = 0.001, Nodes = 1024, Dropout = 0.5',
-            'LR = 0.001, Nodes = 512, Dropout = 0.5']
+df.index = ['stddev = 0.01, Nodes = 1024, Dropout = 0.25', 'stddev = 0.01, Nodes = 512, Dropout = 0.25', 'stddev = 0.05, Nodes = 1024, Dropout = 0.25',
+            'stddev = 0.05, Nodes = 512, Dropout = 0.25', 'stddev = 0.01, Nodes = 1024, Dropout = 0.5', 'stddev = 0.01, Nodes = 512, Dropout = 0.5', 'stddev = 0.05, Nodes = 1024, Dropout = 0.5',
+            'stddev = 0.05, Nodes = 512, Dropout = 0.5']
 print(df)
 df.to_csv(join(script_dir, "A2/smile_cv.csv"))
