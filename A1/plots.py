@@ -8,7 +8,7 @@ import pandas as pd
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-learning_rate = [0.0001, 0.001]
+learning_rate = [0.01, 0.05]
 nodes_list = [1024, 512]
 drop_list = [0.3, 0.5]
 
@@ -27,7 +27,7 @@ fig = plt.figure()
 ax = plt.axes(projection="3d")
 ax.view_init(-135, 50)
 ax.scatter3D(X, Y, Z, c=U, alpha=0.8)
-ax.set_xlabel('Learning rate')
+ax.set_xlabel('Kernel standard deviation')
 ax.set_ylabel('Nodes')
 ax.set_zlabel('Dropout rate')
 plt.show()
