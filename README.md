@@ -14,4 +14,4 @@ This project was developed in Python 3.10.9 using the following packages and the
 - sklearn 1.2.0
 - matplotlib 3.6.2
 
-Using other versions of the same packages may result in incompatibilities and errors.
+Using other versions of the same packages may result in incompatibilities or errors.
