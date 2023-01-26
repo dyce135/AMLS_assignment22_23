@@ -13,5 +13,15 @@ This project was developed in Python 3.10.9 using the following packages and the
 - pandas 1.5.3
 - sklearn 1.2.0
 - matplotlib 3.6.2
+- opencv 4.6.0
+- pickle 3.1.0
 
 Using other versions of the same packages may result in incompatibilities or errors.
+
+## Datasets
+
+The models are built for the CelebA dataset by S. Yang et al. (S. Yang, P. Luo, C. C. Loy, and X. Tang, "From facial parts responses to face detection: A Deep Learning Approach", in IEEE International Conference on Computer Vision (ICCV), 2015) in Part A, and the Cartoon Set dataset by google (https://google.github.io/cartoonset/) in Part B.
+
+## Running this project
+
+To run this project, simply run the main file and select the appropriate options to begin training and testing.
