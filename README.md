@@ -1,6 +1,6 @@
 # AMLS_assignment22_23: SN19006622
 
-Project repository for the 2022-2023 ELEC00134: Applied Machine Learning Systems coursework.
+Project repository for the 2022-2023 ELEC00134: Applied Machine Learning Systems coursework. In part A, we exlore the use of convolutional neural networks (CNNs) as well as preprocessing techniques such as local binary patterns and data augmentation in the training on the CelebA dataset for binary classificationo. In part B, we explore the use of support vector machines (SVMs) along with preprocessing techniques for feature extraction such as canny edges extraction and region of interest analysis in the training on the Cartoon Set dataset.
 
 ## Environment and dependent packages
 
@@ -22,6 +22,6 @@ Using other versions of the same packages may result in incompatibilities or err
 
 The models are built for the CelebA dataset by S. Yang et al. (S. Yang, P. Luo, C. C. Loy, and X. Tang, "From facial parts responses to face detection: A Deep Learning Approach", in IEEE International Conference on Computer Vision (ICCV), 2015) in Part A, and the Cartoon Set dataset by google (https://google.github.io/cartoonset/) in Part B.
 
-## Running this project
+## Structure of this project
 
-To run this project, simply run the main file and select the appropriate options to begin training and testing.
+To run this project, simply run the main file and select the appropriate options to begin training and testing. Each folder contains a main file to store functions and models (e.g. celebGender.py), and also separate files to run the training, cross-validation, and testing for these models. The folders also contain files to store trained models and weights, as well as informational files such as graphs, plots, and tables to be viewed at your discretion. Files to test and demonstrate image preprocessing techniques are also included in some folders.
