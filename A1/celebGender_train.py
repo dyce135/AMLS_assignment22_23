@@ -14,6 +14,7 @@ from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 import celebGender as cg
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Read labels
 train_labels = pd.read_csv(join(script_dir, "Datasets/celeba/labels.csv"), sep='\t')
@@ -77,17 +78,26 @@ def switch():
 
         print("Training model...")
 
-        gender_model.fit(train_gen,
-                         batch_size=batch_size,
-                         epochs=epoch,
-                         validation_data=val_gen,
-                         verbose=1,
-                         callbacks=[es])
+        training = gender_model.fit(train_gen,
+                                    batch_size=batch_size,
+                                    epochs=epoch,
+                                    validation_data=val_gen,
+                                    verbose=1,
+                                    callbacks=[es])
 
         # Save trained model weights to local directory
         model_path = join(script_dir, "A1/Gender_classifier_gen")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
+
+        plt.plot(training.history['loss'])
+        plt.plot(training.history['val_loss'])
+        plt.title('Gender classifier training loss: Augmented images')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['training loss', 'validation loss'], loc='upper left')
+        plt.savefig(join(script_dir, 'A1/Model_hist_gen'))
+        plt.show()
 
     # Training without augmentation generators
     def normalTrain():
@@ -106,17 +116,26 @@ def switch():
 
         print("Training model...")
 
-        gender_model.fit(x_train, y_train,
-                         batch_size=batch_size,
-                         epochs=epoch,
-                         validation_data=(x_val, y_val),
-                         verbose=1,
-                         callbacks=[es])
+        training = gender_model.fit(x_train, y_train,
+                                    batch_size=batch_size,
+                                    epochs=epoch,
+                                    validation_data=(x_val, y_val),
+                                    verbose=1,
+                                    callbacks=[es])
 
         # Save trained model architecture and weights to local directory
         model_path = join(script_dir, "A1/Gender_classifier")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
+
+        plt.plot(training.history['loss'])
+        plt.plot(training.history['val_loss'])
+        plt.title('Gender classifier training loss: Raw images')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['training loss', 'validation loss'], loc='upper left')
+        plt.savefig(join(script_dir, 'A1/Model_hist'))
+        plt.show()
 
     def lbp_train():
         x = cg.train_hist(total_training, 4, 8, 2, 1e-7, 224)
@@ -134,17 +153,26 @@ def switch():
 
         print("Training model...")
 
-        gender_model.fit(x_train, y_train,
-                         batch_size=batch_size,
-                         epochs=epoch,
-                         validation_data=(x_val, y_val),
-                         verbose=1,
-                         callbacks=[es])
+        training = gender_model.fit(x_train, y_train,
+                                    batch_size=batch_size,
+                                    epochs=epoch,
+                                    validation_data=(x_val, y_val),
+                                    verbose=1,
+                                    callbacks=[es])
 
         # Save trained model architecture and weights to local directory
         model_path = join(script_dir, "A1/Gender_classifier_lbp")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
+
+        plt.plot(training.history['loss'])
+        plt.plot(training.history['val_loss'])
+        plt.title('Gender classifier training loss: LBP method')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['training loss', 'validation loss'], loc='upper left')
+        plt.savefig(join(script_dir, 'A1/Model_hist_lbp'))
+        plt.show()
 
     def default():
         print("Please enter a valid option.")
@@ -152,7 +180,8 @@ def switch():
 
     # User input
     option = int(
-        input("Enter 1 for training with image augmentation\nEnter 2 for training without image augmentation\nEnter 3 for training using local binary patterns:\n"))
+        input(
+            "Enter 1 for training with image augmentation\nEnter 2 for training without image augmentation\nEnter 3 for training using local binary patterns:\n"))
 
     switch_dict = {
         1: genTraining,

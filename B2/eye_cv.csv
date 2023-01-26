@@ -1,0 +1,3 @@
+,Mean accuracy,Accuracy standard deviation
+Linear,0.84775,0.007823522224676057
+RBF,0.848455,0.0070075298786377

@@ -13,6 +13,7 @@ from keras.callbacks import EarlyStopping
 import celebSmile as cs
 from sklearn.model_selection import train_test_split
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def switch():
@@ -42,17 +43,26 @@ def switch():
 
         print("Training model...")
 
-        gender_model.fit(train_gen,
-                         batch_size=batch_size,
-                         epochs=epoch,
-                         validation_data=val_gen,
-                         verbose=1,
-                         callbacks=[es])
+        training = gender_model.fit(train_gen,
+                                    batch_size=batch_size,
+                                    epochs=epoch,
+                                    validation_data=val_gen,
+                                    verbose=1,
+                                    callbacks=[es])
 
         # Save trained model architecture and weights to local directory
         model_path = join(script_dir, "A2/smile_classifier_gen")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
+
+        plt.plot(training.history['loss'])
+        plt.plot(training.history['val_loss'])
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['training loss', 'validation loss'], loc='upper left')
+        plt.show()
+        plt.savefig(join(script_dir, 'A2/Model_hist_gen'))
 
     # Training without augmentation generators
     def normalTrain():
@@ -71,17 +81,26 @@ def switch():
 
         print("Training model...")
 
-        gender_model.fit(x_train, y_train,
-                         batch_size=batch_size,
-                         epochs=epoch,
-                         validation_data=(x_val, y_val),
-                         verbose=1,
-                         callbacks=[es])
+        training = gender_model.fit(x_train, y_train,
+                                    batch_size=batch_size,
+                                    epochs=epoch,
+                                    validation_data=(x_val, y_val),
+                                    verbose=1,
+                                    callbacks=[es])
 
         # Save trained model architecture and weights to local directory
         model_path = join(script_dir, "A2/smile_classifier")
         gender_model.save(model_path, save_format='tf')
         print("Saved model to", model_path)
+
+        plt.plot(training.history['loss'])
+        plt.plot(training.history['val_loss'])
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['training loss', 'validation loss'], loc='upper left')
+        plt.savefig(join(script_dir, 'A2/Model_hist'))
+        plt.show()
 
     def default():
         print("Please enter a valid option.")
