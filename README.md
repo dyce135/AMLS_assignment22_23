@@ -1,6 +1,6 @@
 # AMLS Assignment 22/23: SN19006622
 
-Project repository for the 2022-2023 ELEC00134: Applied Machine Learning Systems coursework. In part A, we exlore the use of convolutional neural networks (CNNs) as well as preprocessing techniques such as local binary patterns and data augmentation in the training on the CelebA dataset for binary classificationo. In part B, we explore the use of support vector machines (SVMs) along with preprocessing techniques for feature extraction such as canny edges extraction and region of interest analysis in the training on the Cartoon Set dataset.
+Project repository for the 2022-2023 ELEC00134: Applied Machine Learning Systems coursework. In part A, we exlore the use of convolutional neural networks (CNNs) as well as preprocessing techniques such as local binary patterns and data augmentation in the training on the CelebA dataset for binary classification. In part B, we explore the use of support vector machines (SVMs) along with preprocessing techniques for feature extraction such as canny edges extraction and region of interest analysis in the training on the Cartoon Set dataset.
 
 ## Environment and dependent packages
 
