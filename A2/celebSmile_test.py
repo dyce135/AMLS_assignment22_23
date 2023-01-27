@@ -68,6 +68,7 @@ def run():
             confusion = confusion_matrix(y, y_pred, normalize='pred')
             disp = ConfusionMatrixDisplay(confusion, display_labels=['Not smiling', 'Smiling'])
             disp.plot(values_format='.5g')
+            plt.savefig(join(script_dir, 'A2/confusion'))
             plt.show()
             print(confusion)
 
@@ -88,6 +89,7 @@ def run():
             confusion = confusion_matrix(y, y_pred, normalize='pred')
             disp = ConfusionMatrixDisplay(confusion, display_labels=['Not smiling', 'Smiling'])
             disp.plot(values_format='.5g')
+            plt.savefig(join(script_dir, 'A2/confusion_lbp'))
             plt.show()
             print(confusion)
 
