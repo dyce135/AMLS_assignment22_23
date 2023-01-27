@@ -86,10 +86,10 @@ def switch_face():
         cartoonFaces_CV.run()
 
     def ftrain():
-        cartoonFaces_CV.run()
+        cartoonFaces_train.run()
 
     def ftest():
-        cartoonFaces_CV.run()
+        cartoonFaces_test.run()
 
     def fdefault():
         print("Please enter a valid option.")

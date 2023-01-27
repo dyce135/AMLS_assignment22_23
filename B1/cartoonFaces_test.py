@@ -40,6 +40,7 @@ def run():
     model_dir = join(script_dir, 'B1/face_classifier.sav')
     model = pickle.load(open(model_dir, 'rb'))
 
+    print("Testing on dataset...")
     result = model.score(x, y)
     print("Test accuracy: ", result)
     y_pred = model.predict(x)
@@ -47,5 +48,6 @@ def run():
     confusion = confusion_matrix(y, y_pred)
     disp = ConfusionMatrixDisplay(confusion)
     disp.plot()
+    plt.savefig(join(script_dir, 'B1/confusion'))
     plt.show()
 

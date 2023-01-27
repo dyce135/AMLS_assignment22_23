@@ -1,3 +1,3 @@
 ,Mean accuracy
-Linear,0.9998000000000001
-RBF,0.998
+Linear,0.9996
+RBF,0.9981

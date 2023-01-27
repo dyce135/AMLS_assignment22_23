@@ -47,5 +47,6 @@ def run():
     confusion = confusion_matrix(y, y_pred)
     disp = ConfusionMatrixDisplay(confusion)
     disp.plot()
+    plt.savefig(join(script_dir, 'B2/confusion'))
     plt.show()
 
