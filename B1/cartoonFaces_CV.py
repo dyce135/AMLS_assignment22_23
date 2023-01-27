@@ -40,36 +40,30 @@ def run():
     x = cf.train_arr(samples)
     y = np.array(train_faces)
 
-    kfold = modelsel.KFold(n_splits=5, shuffle=True)
+    # Run repeated k-fold and find significance
+    cv = modelsel.KFold(n_splits=5, shuffle=True)
 
-    model_acc, acc = [], []
+    model_acc = []
 
-    model_no = 1
+    linear_model = svm.SVC(kernel='linear')
+    rbf_model = svm.SVC(kernel='rbf')
 
-    kernel = ['linear', 'rbf', 'poly']
+    linear_score = modelsel.cross_val_score(linear_model, x, y, scoring='accuracy', n_jobs=-1, cv=cv)
+    rbf_score = modelsel.cross_val_score(rbf_model, x, y, scoring='accuracy', n_jobs=-1, cv=cv)
 
+    lin = np.array(linear_score)
+    rbf = np.array(rbf_score)
 
-    for k in kernel:
-        cv_acc = []
-        nk = 1
-
-        print("\nModel ", model_no, " details: \nKernel = ", k, "\n")
-
-        for train, val in kfold.split(x, y):
-            face_model = svm.SVC(kernel=k, verbose=True)
-            face_model.fit(x, y)
-            print("\nValidating model ", model_no," for fold no. ", nk)
-            result = face_model.score(x, y)
-            cv_acc.append(result)
-            nk += 1
-        cv_acc = np.array(cv_acc)
-        model_acc.append(np.mean(cv_acc))
-        model_no += 1
-
+    model_acc.append(lin.mean())
+    model_acc.append(rbf.mean())
 
     df = pd.DataFrame({'Mean accuracy': model_acc})
-    df.index = ['Linear', 'RBF', 'Poly']
+    df.index = ['Linear', 'RBF']
     print(df)
     df.to_csv(join(script_dir, "B1//face_cv.csv"))
+
+
+
+
 
 

@@ -35,7 +35,6 @@ def run():
     train_dir = join(script_dir, "Datasets/cartoon_eye")
 
     print("Number of training samples: ", train_num)
-    img_size = 224
     samples = 10000
 
     x = cf.train_arr(samples)
@@ -46,15 +45,11 @@ def run():
 
     model_acc, model_sd = [], []
 
-    model_no = 1
-
-    kernel = ['linear', 'rbf']
-
     linear_model = svm.SVC(kernel='linear')
     rbf_model = svm.SVC(kernel='rbf')
 
     linear_score = modelsel.cross_val_score(linear_model, x, y, scoring='accuracy', n_jobs=-1, cv=cv)
-    rbf_score = modelsel.cross_val_score(linear_model, x, y, scoring='accuracy', n_jobs=-1, cv=cv)
+    rbf_score = modelsel.cross_val_score(rbf_model, x, y, scoring='accuracy', n_jobs=-1, cv=cv)
 
     lin = np.array(linear_score)
     rbf = np.array(rbf_score)

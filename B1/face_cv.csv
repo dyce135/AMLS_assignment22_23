@@ -1,4 +1,3 @@
 ,Mean accuracy
-Linear,1.0
-RBF,1.0
-Poly,1.0
+Linear,0.9998000000000001
+RBF,0.998
