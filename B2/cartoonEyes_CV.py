@@ -54,7 +54,7 @@ def run():
     lin = np.array(linear_score)
     rbf = np.array(rbf_score)
 
-    ttest_score = ttest(rbf, lin)
+    ttest_score = ttest(lin, rbf)
 
     model_acc.append(lin.mean())
     model_acc.append(rbf.mean())
