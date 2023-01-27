@@ -167,7 +167,7 @@ def switch_main():
     # User input
     option = int(
         input(
-            "Enter 1 for task A1\nEnter 2 for task A2\nEnter 3 for task B1\nEnter 4 for task B2\n"))
+            "Enter 1 for task A1\nEnter 2 for task A2\nEnter 3 for task B1\nEnter 4 for task B2\nEnter 5 to exit program:\n"))
 
     switch_dict = {
         1: gender,

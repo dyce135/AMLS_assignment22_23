@@ -8,7 +8,7 @@ import sklearn.model_selection as modelsel
 from sklearn import svm
 import numpy as np
 from os.path import join, exists
-from scipy.stats import f_oneway as ftest
+from scipy.stats import ttest_ind as ttest
 
 
 def run():
@@ -59,7 +59,7 @@ def run():
     lin = np.array(linear_score)
     rbf = np.array(rbf_score)
 
-    ftest_score = ftest(rbf, lin)
+    ttest_score = ttest(rbf, lin)
 
     model_acc.append(lin.mean())
     model_acc.append(rbf.mean())
@@ -72,10 +72,10 @@ def run():
     print(df)
     df.to_csv(join(script_dir, "B2//eye_cv.csv"))
 
-    df2 = pd.DataFrame({'F-test': ftest_score})
-    df2.index = ['F statistic', 'P value']
-    df2.to_csv(join(script_dir, "B2//ftest.csv"))
+    df2 = pd.DataFrame({'T-test': ttest_score})
+    df2.index = ['T statistic', 'P value']
+    df2.to_csv(join(script_dir, "B2//ttest.csv"))
 
-    print("One way f-test scores: ", ftest_score)
+    print("Independent t-test scores: ", ttest_score)
 
 

@@ -38,7 +38,7 @@ def run():
     epoch = 1000
     lr = 0.0001
     split = 0.1
-    nodes = 1024
+    nodes = 512
     drop = 0.25
 
     total_training = len(os.listdir(join(script_dir, "Datasets/celeba/img")))
