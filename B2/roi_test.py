@@ -17,12 +17,12 @@ import cv2 as cv
 
 # Project path
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-resized_dir = join(script_dir, "Datasets/cartoon_test_face/0/2273.png")
+resized_dir = join(script_dir, "Datasets/cartoon_test_face/0/385.png")
 
 im_dat = cv.imread(resized_dir)
 cv.waitKey(0)
 cv.imshow('image',im_dat)
-roi = im_dat[113:122, 85:89, :]
+roi = im_dat[110:122, 85:90, :]
 cv.imshow('roi',roi)
 cv.waitKey(0)
 

@@ -2,10 +2,6 @@
 # Import packages
 import pandas as pd
 import os
-
-# Project path
-script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 import keras
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -17,77 +13,85 @@ import numpy as np
 from os.path import join, exists
 import gc
 
-train_labels = pd.read_csv(join(script_dir, "Datasets/celeba/labels.csv"), sep='\t')
-train_genders = train_labels["gender"]
-train_genders = train_genders.replace(-1, 0)
-print(train_genders.head())
-train_dir = join(script_dir, "Datasets/celeba/img")
 
-if not exists(join(script_dir, "Datasets/celeba_resized")):
-    print("Resizing training data...")
-    os.mkdir(join(script_dir, "Datasets/celeba_resized"))
-    os.mkdir(join(script_dir, "Datasets/celeba_resized/male"))
-    os.mkdir(join(script_dir, "Datasets/celeba_resized/female"))
-    cg.resizetrain(train_dir, train_genders)
+def run():
 
-train_num = len(os.listdir(join(script_dir, "Datasets/celeba/img")))
-train_dir = join(script_dir, "Datasets/celeba_resized")
+    # Project path
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-print("Number of training samples: ", train_num)
-img_size = 224
-samples = 5000
+    train_labels = pd.read_csv(join(script_dir, "Datasets/celeba/labels.csv"), sep='\t')
+    train_genders = train_labels["gender"]
+    train_genders = train_genders.replace(-1, 0)
+    print(train_genders.head())
+    train_dir = join(script_dir, "Datasets/celeba/img")
 
-x = cg.train_arr(samples)
-y = np.array(train_genders, dtype=np.int8)
+    if not exists(join(script_dir, "Datasets/celeba_resized")):
+        print("Resizing training data...")
+        os.mkdir(join(script_dir, "Datasets/celeba_resized"))
+        os.mkdir(join(script_dir, "Datasets/celeba_resized/male"))
+        os.mkdir(join(script_dir, "Datasets/celeba_resized/female"))
+        cg.resizetrain(train_dir, train_genders)
 
-kfold = modelsel.KFold(n_splits=5, shuffle=True)
+    train_num = len(os.listdir(join(script_dir, "Datasets/celeba/img")))
+    train_dir = join(script_dir, "Datasets/celeba_resized")
 
-model_loss, model_acc, loss, acc = [], [], [], []
+    print("Number of training samples: ", train_num)
+    img_size = 224
+    samples = 5000
 
-model_no = 1
+    x = cg.train_arr(samples)
+    y = np.array(train_genders, dtype=np.int8)
 
-lr = 0.0001
-stdev = [0.01, 0.05]
-nodes_list = [512, 1024]
-drop_list = [0.25, 0.5]
-epoch = 5
-batch_size = 64
+    kfold = modelsel.KFold(n_splits=5, shuffle=True)
 
-for drop in drop_list:
-    for dev in stdev:
-        for nodes in nodes_list:
+    model_loss, model_acc, loss, acc = [], [], [], []
 
-            cv_loss, cv_acc = [], []
-            nk = 1
+    model_no = 1
 
-            print("\nModel ", model_no, " details: \nKernel stddev = ", dev, "\nNodes = ", nodes, "\nDropout = ", drop, "\n")
+    lr = 0.0001
+    stdev = [0.01, 0.05]
+    nodes_list = [512, 1024]
+    drop_list = [0.25, 0.5]
+    epoch = 5
+    batch_size = 64
 
-            for train, val in kfold.split(x, y):
-                gender_model = cg.GenderClassify(img_size, drop=drop, nodes=nodes, normalise=True)
-                opt = tf.keras.optimizers.Adam(lr)
-                gender_model.compile(optimizer=opt, loss=tf.keras.losses.binary_crossentropy, metrics=['acc'])
-                print("Training model ", model_no, " for fold no. ", nk)
-                gender_model.fit(x[train], y[train],
-                                 batch_size=batch_size,
-                                 epochs=epoch,
-                                 verbose=1)
-                print("Validating model for fold no. ", nk)
-                result = gender_model.evaluate(x[val], y[val], batch_size=batch_size, verbose=1)
-                cv_loss.append(result[0])
-                cv_acc.append(result[1])
-                nk += 1
-                del gender_model
-                K.clear_session()
-                gc.collect()
-            cv_loss = np.array(cv_loss)
-            cv_acc = np.array(cv_acc)
-            model_loss.append(np.mean(cv_loss))
-            model_acc.append(np.mean(cv_acc))
-            model_no += 1
+    for drop in drop_list:
+        for dev in stdev:
+            for nodes in nodes_list:
 
-df = pd.DataFrame({'Mean accuracy': model_acc, 'Mean Loss': model_loss})
-df.index = ['stddev = 0.01, Nodes = 1024, Dropout = 0.25', 'stddev = 0.01, Nodes = 512, Dropout = 0.25', 'stddev = 0.05, Nodes = 1024, Dropout = 0.25',
-            'stddev = 0.05, Nodes = 512, Dropout = 0.25', 'stddev = 0.01, Nodes = 1024, Dropout = 0.5', 'stddev = 0.01, Nodes = 512, Dropout = 0.5', 'stddev = 0.05, Nodes = 1024, Dropout = 0.5',
-            'stddev = 0.05, Nodes = 512, Dropout = 0.5']
-print(df)
-df.to_csv(join(script_dir, "A1//gender_cv.csv"))
+                cv_loss, cv_acc = [], []
+                nk = 1
+
+                print("\nModel ", model_no, " details: \nKernel stddev = ", dev, "\nNodes = ", nodes, "\nDropout = ", drop, "\n")
+
+                for train, val in kfold.split(x, y):
+                    gender_model = cg.GenderClassify(img_size, drop=drop, nodes=nodes, normalise=True)
+                    opt = tf.keras.optimizers.Adam(lr)
+                    gender_model.compile(optimizer=opt, loss=tf.keras.losses.binary_crossentropy, metrics=['acc'])
+                    print("Training model ", model_no, " for fold no. ", nk)
+                    gender_model.fit(x[train], y[train],
+                                     batch_size=batch_size,
+                                     epochs=epoch,
+                                     verbose=1)
+                    print("Validating model for fold no. ", nk)
+                    result = gender_model.evaluate(x[val], y[val], batch_size=batch_size, verbose=1)
+                    cv_loss.append(result[0])
+                    cv_acc.append(result[1])
+                    nk += 1
+                    del gender_model
+                    K.clear_session()
+                    gc.collect()
+                cv_loss = np.array(cv_loss)
+                cv_acc = np.array(cv_acc)
+                model_loss.append(np.mean(cv_loss))
+                model_acc.append(np.mean(cv_acc))
+                model_no += 1
+
+    df = pd.DataFrame({'Mean accuracy': model_acc, 'Mean Loss': model_loss})
+    df.index = ['stddev = 0.01, Nodes = 1024, Dropout = 0.25', 'stddev = 0.01, Nodes = 512, Dropout = 0.25', 'stddev = 0.05, Nodes = 1024, Dropout = 0.25',
+                'stddev = 0.05, Nodes = 512, Dropout = 0.25', 'stddev = 0.01, Nodes = 1024, Dropout = 0.5', 'stddev = 0.01, Nodes = 512, Dropout = 0.5', 'stddev = 0.05, Nodes = 1024, Dropout = 0.5',
+                'stddev = 0.05, Nodes = 512, Dropout = 0.5']
+    print(df)
+    df.to_csv(join(script_dir, "A1//gender_cv.csv"))
+
+

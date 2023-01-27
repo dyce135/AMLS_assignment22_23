@@ -62,13 +62,13 @@ def sort_test(test_dir, test_eyes):
 
 # Convert training images to arrays
 def train_arr(size):
-    train_dat = np.empty([size, 108], dtype=np.float)
+    train_dat = np.empty([size, 180], dtype=np.float)
     resized_dir = join(script_dir, "Datasets//cartoon_eye")
 
     # Region of interest preprocessing
     def preprocessing(img_dir, file_no):
         im_dat = cv.imread(img_dir)
-        im_dat = im_dat[113:122, 85:89, :]
+        im_dat = im_dat[110:122, 85:90, :]
         im_dat = np.ravel(im_dat) / 255
         train_dat[file_no] = im_dat
 
@@ -103,13 +103,13 @@ def train_arr(size):
 
 # Convert testing images to arrays
 def test_arr(size):
-    test_dat = np.empty([size, 108], dtype=np.float)
+    test_dat = np.empty([size, 180], dtype=np.float)
     resized_dir = join(script_dir, "Datasets//cartoon_test_eye")
 
     # Region of interest preprocessing
     def preprocessing(img_dir, file_no):
         im_dat = cv.imread(img_dir)
-        im_dat = im_dat[113:122, 85:89, :]
+        im_dat = im_dat[110:122, 85:90, :]
         im_dat = np.ravel(im_dat) / 255
         test_dat[file_no] = im_dat
 

@@ -99,6 +99,8 @@ def test_arr(size):
 
 
 # Generate histogram data for training
+# Method adapted from the web article "Local Binary Patterns with Python and OpenCV" by Adrian Rosebrock
+# https://pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/
 def train_hist(samples, splits, points, rad, eps, size):
     train_dat = np.empty([samples, (splits ** 2) * (points + 2)])
     train_dir = join(script_dir, "Datasets/celeba_resized")
@@ -247,22 +249,26 @@ class GenderClassify(k.Model):
             layer.trainable = False
         if self.normalise:
             self.vgg_new = k.Model(self.vgg.layers[1].input, self.vgg.output)
-        self.layer1 = k.layers.GlobalMaxPool2D()
-        self.layer2 = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
+        self.layer1 = k.layers.MaxPooling2D()
+        self.flatten = k.layers.Flatten()
+        self.dense = k.layers.Dense(self.nodes, activation='relu', kernel_initializer=self.kernel,
+                                    bias_initializer=self.bias)
+        self.dense2 = k.layers.Dense(32, activation='relu', kernel_initializer=self.kernel,
                                      bias_initializer=self.bias)
         self.layer3 = k.layers.Dropout(self.drop)
         self.layer_out = k.layers.Dense(1, activation='sigmoid')
 
     # Call function to connect layers
     def call(self, inputs):
-        if self.normalise:
+        if self.normalise is True:
             rescale = self.rescale(inputs)
-            vgg = self.vgg_new(rescale)
+            vgg = self.vgg(rescale)
         else:
             vgg = self.vgg(inputs)
         maxpool = self.layer1(vgg)
-        dense = self.layer2(maxpool)
-        drop = self.layer3(dense)
+        flatten = self.flatten(maxpool)
+        dense = self.dense(flatten)
+        dense2 = self.dense2(dense)
+        drop = self.layer3(dense2)
         out = self.layer_out(drop)
         return out
-
