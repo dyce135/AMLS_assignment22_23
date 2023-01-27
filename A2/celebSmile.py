@@ -13,6 +13,7 @@ from keras import applications as kapp
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from PIL import Image, ImageOps
 import re
+from skimage import feature
 
 # Project path
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -95,6 +96,137 @@ def test_arr(size):
 
     return test_dat
 
+# Generate histogram data for training
+# Method adapted from the web article "Local Binary Patterns with Python and OpenCV" by Adrian Rosebrock
+# https://pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/
+def train_hist(samples, splits, points, rad, eps, size):
+    train_dat = np.empty([samples, (splits ** 2) * (points + 2)])
+    train_dir = join(script_dir, "Datasets/celeba_resized_smile")
+
+    # Find feature vector for each image
+    for file in os.listdir(join(train_dir, "yes")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "yes"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        # Split image into splits^2 sub-images
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                # Find feature vector from concatenated histograms
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    for file in os.listdir(join(train_dir, "no")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "no"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    return train_dat
+
+
+# Generate histogram data for testing
+# Method adapted from the web article "Local Binary Patterns with Python and OpenCV" by Adrian Rosebrock
+# https://pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/
+def test_hist(samples, splits, points, rad, eps, size):
+    train_dat = np.empty([samples, (splits ** 2) * (points + 2)])
+    train_dir = join(script_dir, "Datasets/celeba_test_resized_smile")
+
+    for file in os.listdir(join(train_dir, "yes")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "yes"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    for file in os.listdir(join(train_dir, "no")):
+        tiles = np.empty([splits ** 2, points + 2])
+        f = join(join(train_dir, "no"), file)
+        filename = os.fsdecode(file)
+        filenum = int(re.findall("\d+", filename)[0])
+        img = load_img(f, 'L')
+        im_dat = np.array(img)
+        k = 0
+        for i in range(0, size, size // splits):
+            for j in range(0, size, size // splits):
+                temp = im_dat[i:i + size // splits, j:j + size // splits]
+                lbp = feature.local_binary_pattern(temp, points, rad, method="uniform")
+                (hist, _) = np.histogram(lbp.ravel(), bins=np.arange(0, points + 3), range=(0, points + 2))
+                hist = hist.astype("float")
+                hist /= (hist.sum() + eps)
+                tiles[k, :] = hist
+                k += 1
+
+        tiles = tiles.flatten()
+        train_dat[filenum] = tiles
+
+    return train_dat
+
+
+# smile classifier model class
+class SmileClassifyLBP(k.Model):
+
+    # Constructor with layers
+    def __init__(self, size, **kwargs):
+        self.kernel = kwargs.get('kernel_initializer', k.initializers.RandomNormal(mean=0, stddev=0.01))
+        self.bias = kwargs.get('kernel_initializer', k.initializers.Zeros())
+        self.inp = kwargs.get('input_shape', (160,))
+        super().__init__()
+        self.layer1 = k.layers.Conv1D(128, activation='relu', kernel_size=3, input_shape=self.inp)
+        self.layer2 = k.layers.Dense(512, activation='relu', kernel_initializer=self.kernel,
+                                     bias_initializer=self.bias)
+        self.layer_conv = k.layers.Conv1D(128, activation='relu', kernel_size=3)
+        self.layer_pool = k.layers.MaxPooling1D(pool_size=2, strides=2)
+        self.layer3 = k.layers.Flatten()
+        self.layer_out = k.layers.Dense(1, activation='sigmoid')
+
+    # Call function to connect layers
+    def call(self, inputs):
+        x = self.layer1(inputs)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        out = self.layer_out(x)
+        return out
 
 # Transfer learning smile classifier based on the pretrained VGG16 model
 class SmileClassify(k.Model):

@@ -99,6 +99,8 @@ def test_arr(size):
 
 
 # Generate histogram data for training
+# Method adapted from the web article "Local Binary Patterns with Python and OpenCV" by Adrian Rosebrock
+# https://pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/
 def train_hist(samples, splits, points, rad, eps, size):
     train_dat = np.empty([samples, (splits ** 2) * (points + 2)])
     train_dir = join(script_dir, "Datasets/celeba_resized")
